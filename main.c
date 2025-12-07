@@ -100,8 +100,8 @@ static void print_main_menu(void)
     printf("\n----------- Main menu -----------\n");
     printf("\n"
            "\t\t\t\t\t\t\n"
-           "\t1. Random Reveal Cards\t\t\n"
-           "\t2. Menu item 2\t\t\n"
+           "\t1. Deck Printout\t\t\n"
+           "\t2. Random Card\t\t\n"
            "\t3. Menu item 3\t\t\n"
            "\t4. Menu item 4\t\t\n"
            "\t5. Exit\t\t\t\t\n"
