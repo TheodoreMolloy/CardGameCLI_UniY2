@@ -99,32 +99,39 @@ void menu_item_4(void) {
 /* game functions */
 
 void deck_printout(void) {
-    // initialise deck
-    printf("Creating deck...\n");
-    // allocate memory for main deck
-    struct card *deck = malloc(sizeof(struct card) * DECK_SIZE);
-    if (!deck) return;
-    // assign actual cards
-    init_deck(deck);
-
+    // create deck
+    struct card *model_deck = create_deck();
     // print cards
-    printf("Revealing cards...\n");
+    printf("Printing Deck...\n");
     for (int i = 0; i < DECK_SIZE; i++) {
         //printf("%d, %d, %d\n", i, deck[i].suit, deck[i].number);
         printf("\n");
         for (int l = 0; l < NUM_LINES; l++) {
-            printf("\n%s", deck[i].line[l]);
+            printf("\n%s", model_deck[i].line[l]);
         }    
     }
     printf("\n");
     // free memory
-
-    free(deck);
-    deck = NULL;
+    free(model_deck);
+    model_deck = NULL;
 }
 
 
 /* functions for all games */
+
+struct card *create_deck(void) { // calls on init_deck
+    // initialise deck
+    printf("Creating deck...\n");
+    // allocate memory for main deck
+    struct card *deck = malloc(sizeof(struct card) * DECK_SIZE);
+    if (!deck) {
+        printf("create_deck memory allocation failure");
+        return NULL;
+    }
+    // assign actual cards
+    init_deck(deck);
+    return deck;
+}
 
 void init_deck(struct card given_deck[]) {
     /* assigns an array of cards their suit, number, and properties (incl. ASCII representations) in standard deck order */

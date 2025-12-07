@@ -34,5 +34,6 @@ void menu_item_4(void);
 void deck_printout(void);
 
 // functions for all games
+struct card *create_deck(void);
 void init_deck(struct card given_deck[]);
 #endif
