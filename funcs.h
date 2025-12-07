@@ -1,14 +1,19 @@
 #ifndef FUNCS_H
 #define FUNCS_H
 
+#define DECK_SIZE 52
+#define NUM_LINES 14 // 14 lines per card in ASCII art
+#define CHARS_PER_LINE 19 // 18 characters plus an '\0'
+#define NUM_SUITS 4
+#define NUM_NUMBERS 13
 
 /* structs */
 
-// card struc
+// card struct
 struct card {
     int number;
     int suit;
-    char *line[14]; // 14 lines, each will have 19 characters (18 characters plus an '\0')
+    char *line[NUM_LINES];
     // note: this is an array of addresses, each address will point to a lookup table element or assigned value in stack
     // note: this is okay because we don't need to edit later, use fixed values if need to change periodically
 };
@@ -25,10 +30,9 @@ void menu_item_2(void);
 void menu_item_3(void);
 void menu_item_4(void);
 
-// deck initialisation
-void init_deck(struct card given_deck[]);
-
-// main functions
+// game functions
 void deck_printout(void);
 
+// functions for all games
+void init_deck(struct card given_deck[]);
 #endif
