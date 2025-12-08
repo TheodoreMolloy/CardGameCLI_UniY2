@@ -77,14 +77,16 @@ void menu_item_1(void) {
     deck_printout();
 }
 
+// calls random_card
 void menu_item_2(void) {
     printf("\n>> Random Card\n");
     random_card();
 }
 
+// calls pontoon
 void menu_item_3(void) {
-    printf("\n>> Menu 3\n");
-    printf("\nSome code here does something useful\n");
+    printf("\n>> Pontoon\n");
+    pontoon();
     /* you can call a function from here that handles menu 3 */
 }
 
@@ -131,19 +133,22 @@ void random_card(void) {
         buff[0] = tolower(buff[0]);
         switch(buff[0]) {
           case 'c': // play new card
-            if (shuffled_index < DECK_SIZE) {
+            if (shuffled_index < DECK_SIZE) { // still in deck, play
                 print_card(model_deck, model_deck_index);
                 shuffled_index++;
             } else { // end of deck, reset and play
                 printf("You've reached the end of the deck, resetting deck...\n");
+                // reset
                 shuffle_ideck(shuffled_ideck);
                 shuffled_index = 0;
+                // play
                 model_deck_index = shuffled_ideck[shuffled_index];
                 print_card(model_deck, model_deck_index);
                 shuffled_index++;
             }
             break;
           case 'r':  // reset deck
+            printf("Shuffling Deck...");
             shuffle_ideck(shuffled_ideck);
             shuffled_index = 0;
             break;
@@ -154,7 +159,6 @@ void random_card(void) {
             printf("Invalid input, please try again.\n");
             break;
         }
-
     }
     // free memory
     free(model_deck);
@@ -163,6 +167,15 @@ void random_card(void) {
     shuffled_ideck = NULL;
 }
 
+void pontoon(void) {
+    struct card *hidden_card = create_hidden_card();
+    for (int i = 0; i < NUM_LINES; i++) {
+        printf("%s\n", hidden_card->line[i]);
+    }
+    
+    free(hidden_card);
+    hidden_card = NULL;
+}
 
 /* functions for all games */
 
@@ -233,3 +246,24 @@ void shuffle_ideck(int ideck[]) {
         ideck[j] = temp;
     }
 }
+
+struct card *create_hidden_card(void) {
+    /* creates back of card so dealers hand print hidden */
+    struct card *hidden_card = malloc(sizeof(struct card));
+    if (!hidden_card) {
+        printf("create_hidden_card memory allocation failure");
+        return NULL;
+    }
+    // note: need -> not . because hidden_card is a pointer
+    // first two lines
+    hidden_card->line[0] =               "==================";
+    hidden_card->line[1] =               "|                |";
+    for (int i = 2; i <= NUM_LINES - 4; i = i + 2) { // middle lines (i<=NUM_LINES-4 not -3 because line[i+1] term)
+        hidden_card->line[i] =           "| * * * * * * *  |";
+        hidden_card->line[i + 1] =       "|  * * * * * * * |";
+    }
+    // last two lines
+    hidden_card->line[NUM_LINES - 2] =   "|                |";
+    hidden_card->line[NUM_LINES - 1] =   "==================";
+} // note: card struct but number and suit aren't allocated, this won't be an issue unless called but I'm unsure if its good practice
+
