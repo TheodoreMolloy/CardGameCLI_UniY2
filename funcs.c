@@ -117,7 +117,6 @@ void random_card(void) {
     struct card *model_deck = create_model_deck();
     printf("Shuffling Deck...\n");
     int *shuffled_ideck = create_shuffled_ideck();
-
     // game
     int game_ongoing = 1;
     char buff[64]; // stores user input
@@ -128,7 +127,10 @@ void random_card(void) {
         if (!fgets(buff, sizeof(buff), stdin)) { // assign input to buff and check assessible
             puts("\nInput error. Exiting.\n");
             exit(1);
-        } else if (tolower(buff[0]) == 'c') {  // play new card
+        }
+        buff[0] = tolower(buff[0]);
+        switch(buff[0]) {
+          case 'c': // play new card
             if (shuffled_index < DECK_SIZE) {
                 print_card(model_deck, model_deck_index);
                 shuffled_index++;
@@ -140,16 +142,20 @@ void random_card(void) {
                 print_card(model_deck, model_deck_index);
                 shuffled_index++;
             }
-        } else if (tolower(buff[0]) == 'r') { // reset deck
+            break;
+          case 'r':  // reset deck
             shuffle_ideck(shuffled_ideck);
             shuffled_index = 0;
-        } else if (tolower(buff[0]) == 'b') { // stop playing
+            break;
+          case 'b': // stop playing
             game_ongoing = 0;
-        } else {
+            break;
+          default:
             printf("Invalid input, please try again.\n");
+            break;
         }
+
     }
-    
     // free memory
     free(model_deck);
     model_deck = NULL;
