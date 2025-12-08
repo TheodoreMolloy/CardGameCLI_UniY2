@@ -5,6 +5,7 @@
 #include <math.h>
 #include "funcs.h"
 
+static const char CARD_SPACING[] = "        "; // standard spacing between cards
 
 // ASCII art lookup tables
 // note: could have used a table of structs for clarity but it felt overcomplicated for this task - might use later
@@ -168,18 +169,61 @@ void random_card(void) {
 }
 
 void pontoon(void) {
+    // create model deck and shuffled index deck
+    printf("Creating Deck...\n");
+    struct card *model_deck = create_model_deck();
     struct card *hidden_card = create_hidden_card();
-    for (int i = 0; i < NUM_LINES; i++) {
-        printf("%s\n", hidden_card->line[i]);
+    printf("Shuffling Deck...\n");
+    int *shuffled_ideck = create_shuffled_ideck();
+    // game
+    char buff[64]; // stores user input
+    int shuffled_index = 0; // stores index of current card in shuffled ideck
+    int game_ongoing = 1;
+    while (game_ongoing) {
+
+        // check to proceed
+        int proceed_statement = 1;
+        while (proceed_statement) {
+            // safely take input
+            printf("\nLet's play Pontoon! Do you wish to proceed?\nEnter 's' to start or 'e' to exit.\n");
+            if (!fgets(buff, sizeof(buff), stdin)) {
+                puts("\nInput error. Exiting.\n");
+                exit(1);
+            }
+            // determine next action
+            buff[0] = tolower(buff[0]);
+            switch (buff[0]) {
+              case 's':
+                proceed_statement = 0; // breaks while loop
+                break;
+              case 'e':
+                game_ongoing = 0;
+                proceed_statement = 0;
+                break;
+              default:
+                printf("\nInvalid input, please try again.\n");
+                break;
+            }
+        }
+        if (game_ongoing == 0) {break;}
+
+        print_hidden_cards(hidden_card);
+
+        printf("\nEnter 't' to twist.\nEnter 's' to stick.\nEnter 'b' to stop playing.\n");
+        if (!fgets(buff, sizeof(buff), stdin)) { // assign input to buff and check assessible
+            puts("\nInput error. Exiting.\n");
+            exit(1);
+        }
     }
-    
+
+    // free memory
     free(hidden_card);
     hidden_card = NULL;
 }
 
 /* functions for all games */
 
-struct card *create_model_deck(void) { // calls on init_deck
+struct card *create_model_deck(void) { // calls on init_deck - used in all games
     // initialise deck
     printf("Creating deck...\n");
     // allocate memory for main deck
@@ -193,7 +237,7 @@ struct card *create_model_deck(void) { // calls on init_deck
     return deck;
 }
 
-void init_deck(struct card given_model_deck[]) {
+void init_deck(struct card given_model_deck[]) { // used in create_model_deck
     /* assigns an array of cards their suit, number, and properties (incl. ASCII representations) in standard deck order */
     // note: use an ASCII lookup table to avoid if or switch statement
     int i = 0;
@@ -216,14 +260,15 @@ void init_deck(struct card given_model_deck[]) {
     }
 }
 
-void print_card(struct card given_model_deck[], int index) {
+void print_card(struct card given_model_deck[], int index) { // used in random_card
+    /* prints a single card from model deck depending on index */
     for (int l = 0; l < NUM_LINES; l++) {
         printf("\n%s", given_model_deck[index].line[l]);
     }
     printf("\n");
 }
 
-int *create_shuffled_ideck(void) { // calls on shuffle_ideck
+int *create_shuffled_ideck(void) { // calls on shuffle_ideck - used in random_card
     /* allocates memory and shuffles ideck */
     int *ideck = malloc(sizeof(int) * DECK_SIZE);
     if (!ideck) {
@@ -234,7 +279,7 @@ int *create_shuffled_ideck(void) { // calls on shuffle_ideck
     return ideck;
 }
 
-void shuffle_ideck(int ideck[]) {
+void shuffle_ideck(int ideck[]) { // used in create_shuffled_ideck and random_deck
     /* assigns 0 to 51 to array of an index deck (ideck) and uses a fisher-yates shuffle */
     for (int n = 0; n < DECK_SIZE; n++) ideck[n] = n;
     for (int i = 0; i < DECK_SIZE; i++) {
@@ -247,23 +292,31 @@ void shuffle_ideck(int ideck[]) {
     }
 }
 
-struct card *create_hidden_card(void) {
+struct card *create_hidden_card(void) { // used in pontoon
     /* creates back of card so dealers hand print hidden */
-    struct card *hidden_card = malloc(sizeof(struct card));
-    if (!hidden_card) {
-        printf("create_hidden_card memory allocation failure");
+    struct card *hid_card = malloc(sizeof(struct card));
+    if (!hid_card) {
+        printf("create_hid_card memory allocation failure");
         return NULL;
     }
-    // note: need -> not . because hidden_card is a pointer
+    // note: need -> not . because hid_card is a pointer
     // first two lines
-    hidden_card->line[0] =               "==================";
-    hidden_card->line[1] =               "|                |";
+    hid_card->line[0] =               "==================";
+    hid_card->line[1] =               "|                |";
     for (int i = 2; i <= NUM_LINES - 4; i = i + 2) { // middle lines (i<=NUM_LINES-4 not -3 because line[i+1] term)
-        hidden_card->line[i] =           "| * * * * * * *  |";
-        hidden_card->line[i + 1] =       "|  * * * * * * * |";
+        hid_card->line[i] =           "| * * * * * * *  |";
+        hid_card->line[i + 1] =       "|  * * * * * * * |";
     }
     // last two lines
-    hidden_card->line[NUM_LINES - 2] =   "|                |";
-    hidden_card->line[NUM_LINES - 1] =   "==================";
+    hid_card->line[NUM_LINES - 2] =   "|                |";
+    hid_card->line[NUM_LINES - 1] =   "==================";
 } // note: card struct but number and suit aren't allocated, this won't be an issue unless called but I'm unsure if its good practice
 
+void print_hidden_cards(struct card *hid_card) { // used in pontoon
+    /* prints the house's cards */
+    printf("\nHouse's Cards:\n");
+    for (int i = 0; i < NUM_LINES; i++) {
+        printf("%s%s%s\n", hid_card->line[i], CARD_SPACING, hid_card->line[i]);
+    }
+    printf("\n");
+}

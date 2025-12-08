@@ -42,5 +42,6 @@ void print_card(struct card given_model_deck[], int index);
 int *create_shuffled_ideck(void);
 void shuffle_ideck(int ideck[]);
 struct card *create_hidden_card(void);
+void print_hidden_cards(struct card *hidden_card);
 
 #endif
