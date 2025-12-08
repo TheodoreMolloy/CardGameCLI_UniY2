@@ -32,8 +32,13 @@ void menu_item_4(void);
 
 // game functions
 void deck_printout(void);
+void random_card(void);
 
 // functions for all games
-struct card *create_deck(void);
-void init_deck(struct card given_deck[]);
+struct card *create_model_deck(void);
+void init_deck(struct card given_model_deck[]);
+void print_card(struct card given_model_deck[], int index);
+int *create_shuffled_ideck(void);
+void shuffle_ideck(int ideck[]);
+
 #endif
