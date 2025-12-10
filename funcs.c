@@ -165,7 +165,6 @@ void pontoon(void) {
     // create variables / allocate memory
     printf("Creating Deck...\n");
     struct card *model_deck = create_model_deck(); // reference deck
-    struct card *hidden_card = create_hidden_card(); // purely for display purposes
     printf("Shuffling Deck...\n");
     // shuffled ideck and hands are just index values for model_deck
     int *shuffled_ideck = create_shuffled_ideck();
@@ -261,7 +260,7 @@ void pontoon(void) {
             }
 
             // print cards
-            print_user_hand(user_hand, hidden_card, model_deck);
+            print_user_hand(user_hand, model_deck);
             
             // safely take input
             printf("\nEnter 't' to twist.\nEnter 's' to stick.\nEnter 'e' to exit game.\n");
@@ -323,8 +322,6 @@ void pontoon(void) {
     }
 
     // free memory
-    free(hidden_card);
-    hidden_card = NULL;
     free(model_deck);
     model_deck = NULL;
     free(shuffled_ideck);
@@ -337,7 +334,7 @@ void pontoon(void) {
 
 /* functions for all games */
 
-struct card *create_model_deck(void) { // calls on init_deck - used in all games
+struct card *create_model_deck(void) { // calls on init_deck
     // initialise deck
     printf("Creating deck...\n");
     // allocate memory for main deck
@@ -351,7 +348,7 @@ struct card *create_model_deck(void) { // calls on init_deck - used in all games
     return deck;
 }
 
-void init_deck(struct card given_model_deck[]) { // used in create_model_deck
+void init_deck(struct card given_model_deck[]) {
     /* assigns an array of cards their suit, number, and properties (incl. ASCII representations) in standard deck order */
     // note: use an ASCII lookup table to avoid if or switch statement
     int i = 0;
@@ -374,7 +371,7 @@ void init_deck(struct card given_model_deck[]) { // used in create_model_deck
     }
 }
 
-void print_card(struct card given_model_deck[], int index) { // used in random_card
+void print_card(struct card given_model_deck[], int index) {
     /* prints a single card from model deck depending on index */
     for (int l = 0; l < NUM_LINES; l++) {
         printf("\n%s", given_model_deck[index].line[l]);
@@ -382,7 +379,7 @@ void print_card(struct card given_model_deck[], int index) { // used in random_c
     printf("\n");
 }
 
-int *create_shuffled_ideck(void) { // calls on shuffle_ideck - used in random_card
+int *create_shuffled_ideck(void) { // calls on shuffle_ideck
     /* allocates memory and shuffles ideck */
     int *ideck = malloc(sizeof(int) * DECK_SIZE);
     if (!ideck) {
@@ -393,7 +390,7 @@ int *create_shuffled_ideck(void) { // calls on shuffle_ideck - used in random_ca
     return ideck;
 }
 
-void shuffle_ideck(int ideck[]) { // used in create_shuffled_ideck and random_deck
+void shuffle_ideck(int ideck[]) {
     /* assigns 0 to 51 to array of an index deck (ideck) and uses a fisher-yates shuffle */
     srand(time(NULL)); // seeds rand() with no seconds since 1/1/1970
     for (int n = 0; n < DECK_SIZE; n++) ideck[n] = n;
@@ -407,30 +404,20 @@ void shuffle_ideck(int ideck[]) { // used in create_shuffled_ideck and random_de
     }
 }
 
-struct card *create_hidden_card(void) { // used in pontoon
-    /* creates back of card so dealers hand print hidden */
-    struct card *hid_card = calloc(1, sizeof(struct card)); // calloc initialises which is good because we don't assign to all numbers
-    if (!hid_card) {
-        printf("create_hid_card memory allocation failure");
-        return NULL;
-    }
-    // note: need -> not . because hid_card is a pointer
-    // first two lines
-    hid_card->line[0] =               "==================";
-    hid_card->line[1] =               "|                |";
+void print_hidden_cards() {
+    /* prints the back's of the house's cards (hence hidden) */
+    char card_line[NUM_LINES][CHARS_PER_LINE];
+    strcpy(card_line[0], "==================");
+    strcpy(card_line[1], "|                |");
     for (int i = 2; i <= NUM_LINES - 4; i = i + 2) { // middle lines (i<=NUM_LINES-4 not -3 because line[i+1] term)
-        hid_card->line[i] =           "| * * * * * * *  |";
-        hid_card->line[i + 1] =       "|  * * * * * * * |";
+        strcpy(card_line[i],   "| * * * * * * *  |");
+        strcpy(card_line[i+1], "|  * * * * * * * |");
     }
     // last two lines
-    hid_card->line[NUM_LINES - 2] =   "|                |";
-    hid_card->line[NUM_LINES - 1] =   "==================";
-} // note: card struct but number and suit aren't allocated, this won't be an issue unless called but I'm unsure if its good practice
-
-void print_hidden_cards(struct card *hid_card) { // used in pontoon
-    /* prints the house's cards */
+    strcpy(card_line[NUM_LINES - 2], "|                |");
+    strcpy(card_line[NUM_LINES - 1], "==================");
     for (int i = 0; i < NUM_LINES; i++) {
-        printf("%s%s%s\n", hid_card->line[i], CARD_SPACING, hid_card->line[i]);
+        printf("%s%s%s\n", card_line[i], CARD_SPACING, card_line[i]);
     }
     printf("\n");
 }
@@ -473,15 +460,15 @@ void assign_hand_value(struct hand *given_hand, struct card *given_model_deck) {
     given_hand->value = hand_value;
 }
 
-void print_user_hand(struct hand *given_user_hand, struct card *given_hidden_card, struct card *given_model_deck) {
+void print_user_hand(struct hand *given_user_hand, struct card *given_model_deck) { // calls on print_hidden_cards and print_hand
     printf("\nBanker's Hand:\n");
-    print_hidden_cards(given_hidden_card);
+    print_hidden_cards();
     printf("\nUser's Hand:\n");
     print_hand(given_user_hand, given_model_deck);
     printf("Hand value: %d\n", given_user_hand->value);
 }
 
-void print_both_hands(struct hand *given_user_hand, struct hand *given_banker_hand, struct card *given_model_deck) {
+void print_both_hands(struct hand *given_user_hand, struct hand *given_banker_hand, struct card *given_model_deck) { // calls on print_hand
     printf("\nBanker's Hand:\n");
     print_hand(given_banker_hand, given_model_deck);
     printf("Banker's hand value: %d\n", given_banker_hand->value);

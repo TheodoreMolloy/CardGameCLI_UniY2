@@ -47,11 +47,10 @@ void init_deck(struct card given_model_deck[]);
 void print_card(struct card given_model_deck[], int index);
 int *create_shuffled_ideck(void);
 void shuffle_ideck(int ideck[]);
-struct card *create_hidden_card(void);
-void print_hidden_cards(struct card *hidden_card);
+void print_hidden_cards();
 void print_hand(struct hand *given_hand, struct card *given_model_deck);
 void assign_hand_value(struct hand *given_hand, struct card *given_model_deck);
-void print_user_hand(struct hand *given_user_hand, struct card *given_hidden_card, struct card *given_model_deck);
+void print_user_hand(struct hand *given_user_hand, struct card *given_model_deck);
 void print_both_hands(struct hand *given_user_hand, struct hand *given_banker_hand, struct card *given_model_deck);
 
 #endif
