@@ -6,6 +6,7 @@
 #define CHARS_PER_LINE 19 // 18 characters plus an '\0'
 #define NUM_SUITS 4
 #define NUM_NUMBERS 13
+#define MAX_HAND_SIZE 5 // pontoon 5 trick rule
 
 /* structs */
 
@@ -16,6 +17,12 @@ struct card {
     char *line[NUM_LINES];
     // note: this is an array of addresses, each address will point to a lookup table element or assigned value in stack
     // note: this is okay because we don't need to edit later, use fixed values if need to change periodically
+};
+
+struct hand {
+    int *index;
+    int size;
+    int value;
 };
 
 /* enumerations */
@@ -43,5 +50,7 @@ int *create_shuffled_ideck(void);
 void shuffle_ideck(int ideck[]);
 struct card *create_hidden_card(void);
 void print_hidden_cards(struct card *hidden_card);
+void print_hand(struct hand *given_hand, struct card *given_model_deck);
+void assign_hand_value(struct hand *given_hand, struct card *given_model_deck);
 
 #endif

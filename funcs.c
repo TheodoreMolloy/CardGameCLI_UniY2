@@ -125,7 +125,6 @@ void random_card(void) {
     char buff[64]; // stores user input
     int shuffled_index = 0; // stores index of current card in shuffled ideck
     while (game_ongoing) {
-        int model_deck_index = shuffled_ideck[shuffled_index]; // stores index of current card in model deck
         printf("\nEnter 'c' or 'C' for a random card.\nEnter 'r or 'R' to reset the deck.\nEnter 'b' or 'B' to stop playing.\n");
         if (!fgets(buff, sizeof(buff), stdin)) { // assign input to buff and check assessible
             puts("\nInput error. Exiting.\n");
@@ -135,17 +134,14 @@ void random_card(void) {
         switch(buff[0]) {
           case 'c': // play new card
             if (shuffled_index < DECK_SIZE) { // still in deck, play
-                print_card(model_deck, model_deck_index);
-                shuffled_index++;
+                print_card(model_deck, shuffled_ideck[shuffled_index++]);
             } else { // end of deck, reset and play
                 printf("You've reached the end of the deck, resetting deck...\n");
                 // reset
                 shuffle_ideck(shuffled_ideck);
                 shuffled_index = 0;
                 // play
-                model_deck_index = shuffled_ideck[shuffled_index];
-                print_card(model_deck, model_deck_index);
-                shuffled_index++;
+                print_card(model_deck, shuffled_ideck[shuffled_index++]);
             }
             break;
           case 'r':  // reset deck
@@ -160,6 +156,7 @@ void random_card(void) {
             printf("Invalid input, please try again.\n");
             break;
         }
+
     }
     // free memory
     free(model_deck);
@@ -169,21 +166,40 @@ void random_card(void) {
 }
 
 void pontoon(void) {
-    // create model deck and shuffled index deck
+    // create variables / allocate memory
     printf("Creating Deck...\n");
-    struct card *model_deck = create_model_deck();
-    struct card *hidden_card = create_hidden_card();
+    struct card *model_deck = create_model_deck(); // reference deck
+    struct card *hidden_card = create_hidden_card(); // purely for display purposes
     printf("Shuffling Deck...\n");
+    // shuffled decl and hands are just index values for model_deck
     int *shuffled_ideck = create_shuffled_ideck();
-    // game
+    struct hand *user_hand = calloc(1, sizeof(struct hand));
+    struct hand *banker_hand = calloc(1, sizeof(struct hand));
+    user_hand->index = calloc(MAX_HAND_SIZE, sizeof(int));
+    banker_hand->index = calloc(MAX_HAND_SIZE, sizeof(int));
+    // note: need to allocate memory for arrays not just struct pointers, didn't have to for model_deck.line[i] because that was a pointer to a string stored in stack.
+    // note: i thought about realloc but its really not worth it for arrays this small
     char buff[64]; // stores user input
-    int shuffled_index = 0; // stores index of current card in shuffled ideck
+    // game
     int game_ongoing = 1;
     while (game_ongoing) {
-
-        // check to proceed
-        int proceed_statement = 1;
-        while (proceed_statement) {
+        // define game-ending senarios variables now because they need to persist between while loops for double break;
+        int bust = 0;
+        int five_card_trick = 0;
+        // clear hands
+        for (int i = 0; i < MAX_HAND_SIZE; i++) {user_hand->index[i] = 0;}
+        user_hand->size = 0;
+        user_hand->value = 0;
+        for (int i = 0; i < MAX_HAND_SIZE; i++) {banker_hand->index[i] = 0;}
+        banker_hand->size = 0;
+        banker_hand->value = 0;
+        // note: technically only need to adjust size and value and rest will write over during the game, but this feels like good practice
+        // reshuffle
+        int shuffled_index = 0;
+        shuffle_ideck(shuffled_ideck);
+        int while_condition = 1;
+        // check to proceed        
+        while (while_condition) {
             // safely take input
             printf("\nLet's play Pontoon! Do you wish to proceed?\nEnter 's' to start or 'e' to exit.\n");
             if (!fgets(buff, sizeof(buff), stdin)) {
@@ -191,34 +207,126 @@ void pontoon(void) {
                 exit(1);
             }
             // determine next action
-            buff[0] = tolower(buff[0]);
+            buff[0] = tolower(buff[0]); // allow for lowercase
             switch (buff[0]) {
               case 's':
-                proceed_statement = 0; // breaks while loop
+                while_condition = 0; // breaks while loop
                 break;
               case 'e':
                 game_ongoing = 0;
-                proceed_statement = 0;
+                while_condition = 0;
                 break;
               default:
                 printf("\nInvalid input, please try again.\n");
                 break;
             }
         }
-        if (game_ongoing == 0) {break;}
+        if (game_ongoing == 0) break; // if user entered e, this will activate
+        // note: this is my blueprint for user input.
 
-        print_hidden_cards(hidden_card);
-
-        printf("\nEnter 't' to twist.\nEnter 's' to stick.\nEnter 'b' to stop playing.\n");
-        if (!fgets(buff, sizeof(buff), stdin)) { // assign input to buff and check assessible
-            puts("\nInput error. Exiting.\n");
-            exit(1);
+        // initial deal
+        for (int i = 0; i < 2; i++) {
+            user_hand->index[user_hand->size++] = shuffled_ideck[shuffled_index++];
+            banker_hand->index[banker_hand->size++] = shuffled_ideck[shuffled_index++];
         }
+        assign_hand_value(user_hand, model_deck);
+        assign_hand_value(banker_hand, model_deck);
+        
+        // check for a pontoon - outside turn so doesn't need own variable to break out of while loops
+        if (banker_hand->value == 21) { // banker wins on draw so evaluate their cards first
+            printf("\nBanker's Hand:\n");
+            print_hidden_cards(hidden_card);
+            printf("\nUser's Hand:\n");
+            print_hand(user_hand, model_deck);
+            printf("\nBanker wins with a pontoon!");
+            continue;
+        }
+        if (user_hand->value == 21) {
+            printf("\nBanker's Hand:\n");
+            print_hidden_cards(hidden_card);
+            printf("\nUser's Hand:\n");
+            print_hand(user_hand, model_deck);
+            printf("\nBanker wins with a pontoon!");
+            continue;
+        }
+
+        // note: increment size after calling it so size means size not index
+        // user's turn
+        while_condition = 1;
+        while (while_condition) {
+            // checks for game-ending senarios now so can print actual bankers cards 
+            // check for bust
+            if (user_hand->value > 21) {
+                bust = 1;
+                // print cards
+                printf("\nBanker's Hand:\n");
+                print_hidden_cards(hidden_card);
+                printf("\nUser's Hand:\n");
+                print_hand(user_hand, model_deck);
+                printf("Hand value: %d\n", user_hand->value);
+                printf("BUST! Banker wins!\n");
+                break;
+            }
+            // check for a 5 card trick
+            if (user_hand->size == 5) {
+                five_card_trick = 1;
+                printf("\nBanker's Hand:\n");
+                print_hidden_cards(hidden_card);
+                printf("\nUser's Hand:\n");
+                print_hand(user_hand, model_deck);
+                printf("Hand value: %d\n", user_hand->value);
+                printf("User wins with a 5 card trick!");
+                break;
+            }
+
+            // print cards
+            printf("\nBanker's Hand:\n");
+            print_hidden_cards(hidden_card);
+            printf("\nUser's Hand:\n");
+            print_hand(user_hand, model_deck);
+            printf("Hand value: %d\n", user_hand->value);
+            
+            // safely take input
+            printf("\nEnter 't' to twist.\nEnter 's' to stick.\nEnter 'e' to exit game.\n");
+            if (!fgets(buff, sizeof(buff), stdin)) { // assign input to buff and check assessible
+                puts("\nInput error. Exiting.\n");
+                exit(1);
+            }
+            // determine next action
+            buff[0] = tolower(buff[0]); // allow for lowercase
+            switch (buff[0]) {
+              case 't':
+                user_hand->index[user_hand->size++] = shuffled_ideck[shuffled_index++];
+                assign_hand_value(user_hand, model_deck);
+                break;
+              case 's':
+                while_condition = 0; // breaks while loop
+                break;
+              case 'e':
+                game_ongoing = 0;
+                while_condition = 0;
+                break;
+              default:
+                printf("\nInvalid input, please try again.\n");
+                break;
+            }
+        }
+        if (!game_ongoing) break; // if user entered e, this will activate
+        if (bust) continue;
+        if (five_card_trick) continue;
     }
 
     // free memory
     free(hidden_card);
     hidden_card = NULL;
+    free(model_deck);
+    model_deck = NULL;
+    free(shuffled_ideck);
+    shuffled_ideck = NULL;
+    free(user_hand);
+    user_hand = NULL;
+    free(banker_hand);
+    banker_hand = NULL;
 }
 
 /* functions for all games */
@@ -294,7 +402,7 @@ void shuffle_ideck(int ideck[]) { // used in create_shuffled_ideck and random_de
 
 struct card *create_hidden_card(void) { // used in pontoon
     /* creates back of card so dealers hand print hidden */
-    struct card *hid_card = malloc(sizeof(struct card));
+    struct card *hid_card = calloc(1, sizeof(struct card)); // calloc initialises which is good because we don't assign to all numbers
     if (!hid_card) {
         printf("create_hid_card memory allocation failure");
         return NULL;
@@ -314,9 +422,46 @@ struct card *create_hidden_card(void) { // used in pontoon
 
 void print_hidden_cards(struct card *hid_card) { // used in pontoon
     /* prints the house's cards */
-    printf("\nHouse's Cards:\n");
     for (int i = 0; i < NUM_LINES; i++) {
         printf("%s%s%s\n", hid_card->line[i], CARD_SPACING, hid_card->line[i]);
     }
     printf("\n");
+}
+// note: hidden_card is for display only - this is overcomplicated, just reduce to one print_hidden_cards() which is the same every time
+
+void print_hand(struct hand *given_hand, struct card *given_model_deck) {
+    /* prints all cards in a given hand side-by-side with spacing */
+    for (int i = 0; i < NUM_LINES; i++) {
+        for (int j = 0; j < given_hand->size; j++) { // each line seperately considered
+            printf("%s%s", given_model_deck[given_hand->index[j]].line[i], CARD_SPACING);
+        }
+        printf("\n");
+    }
+}
+
+void assign_hand_value(struct hand *given_hand, struct card *given_model_deck) {
+    /* finds the value of a given hand */
+    int hand_value = 0;
+    int num_aces = 0;
+    for (int i = 0; i < given_hand->size; i++) {
+        int card_num = given_model_deck[given_hand->index[i]].number;
+        if (card_num < JACK) {
+            hand_value += card_num + 2; // based on enumeration
+        } else if (card_num < ACE) {
+            hand_value += 10;
+        } else {
+            num_aces++; // need to consider aces individually
+        }
+    }
+    while (num_aces > 0) {
+        if (num_aces == 1 & hand_value < 11) { // because only one ace can be 11 (will be bust otherwise)
+            hand_value += 11;
+            num_aces--;
+        } else {
+            hand_value += 1;
+            num_aces--;
+        }
+    }
+    // note: might be a better method than if statements, used them because there's not too many options
+    given_hand->value = hand_value;
 }
