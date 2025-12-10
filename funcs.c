@@ -231,7 +231,7 @@ void pontoon(void) {
         }
         if (user_hand->value == 21) {
             print_both_hands(user_hand, banker_hand, model_deck);
-            printf("\nBanker wins with a pontoon!\n");
+            printf("\nUser wins with a pontoon!\n");
             continue;
         }
         // note: continue sends back to start of while loop
@@ -315,7 +315,7 @@ void pontoon(void) {
             } else while_condition = 0;
             sleep(1); // pause for 1 second between banker turns
         }
-        if (early_end) break;
+        if (early_end) continue;
         if (user_hand->value > banker_hand->value) printf("\nUser Wins!\n");
         else if (user_hand->value == banker_hand->value) printf("Banker wins by default!");
         else printf("\nBanker wins!\n");
