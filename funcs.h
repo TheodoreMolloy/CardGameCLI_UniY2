@@ -35,7 +35,6 @@ enum card_suit {HEARTS, DIAMONDS, CLUBS, SPADES};
 void menu_item_1(void);
 void menu_item_2(void);
 void menu_item_3(void);
-void menu_item_4(void);
 
 // game functions
 void deck_printout(void);
@@ -52,5 +51,7 @@ struct card *create_hidden_card(void);
 void print_hidden_cards(struct card *hidden_card);
 void print_hand(struct hand *given_hand, struct card *given_model_deck);
 void assign_hand_value(struct hand *given_hand, struct card *given_model_deck);
+void print_user_hand(struct hand *given_user_hand, struct card *given_hidden_card, struct card *given_model_deck);
+void print_both_hands(struct hand *given_user_hand, struct hand *given_banker_hand, struct card *given_model_deck);
 
 #endif

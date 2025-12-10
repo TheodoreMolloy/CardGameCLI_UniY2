@@ -85,10 +85,6 @@ static void select_menu_item(int input)
             menu_item_3();
             go_back_to_main();
             break;
-        case 4:
-            menu_item_4();
-            go_back_to_main();
-            break;
         default:
             printf("Bye!\n");
             exit(0);
@@ -103,8 +99,7 @@ static void print_main_menu(void)
            "\t1. Deck Printout\t\t\n"
            "\t2. Random Card\t\t\n"
            "\t3. Pontoon\t\t\n"
-           "\t4. Menu item 4\t\t\n"
-           "\t5. Exit\t\t\t\t\n"
+           "\t4. Exit\t\t\t\t\n"
            "\t\t\t\t\t\t\n");
     printf("---------------------------------------------\n");
 }

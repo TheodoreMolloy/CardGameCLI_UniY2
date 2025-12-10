@@ -3,6 +3,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <unistd.h>
+#include <time.h>
 #include "funcs.h"
 
 static const char CARD_SPACING[] = "        "; // standard spacing between cards
@@ -91,12 +93,6 @@ void menu_item_3(void) {
     /* you can call a function from here that handles menu 3 */
 }
 
-void menu_item_4(void) {
-    printf("\n>> Menu 4\n");
-    printf("\nSome code here does something useful\n");
-    /* you can call a function from here that handles menu 4 */
-}
-
 
 /* game functions */
 
@@ -171,7 +167,7 @@ void pontoon(void) {
     struct card *model_deck = create_model_deck(); // reference deck
     struct card *hidden_card = create_hidden_card(); // purely for display purposes
     printf("Shuffling Deck...\n");
-    // shuffled decl and hands are just index values for model_deck
+    // shuffled ideck and hands are just index values for model_deck
     int *shuffled_ideck = create_shuffled_ideck();
     struct hand *user_hand = calloc(1, sizeof(struct hand));
     struct hand *banker_hand = calloc(1, sizeof(struct hand));
@@ -183,9 +179,6 @@ void pontoon(void) {
     // game
     int game_ongoing = 1;
     while (game_ongoing) {
-        // define game-ending senarios variables now because they need to persist between while loops for double break;
-        int bust = 0;
-        int five_card_trick = 0;
         // clear hands
         for (int i = 0; i < MAX_HAND_SIZE; i++) {user_hand->index[i] = 0;}
         user_hand->size = 0;
@@ -231,60 +224,44 @@ void pontoon(void) {
         }
         assign_hand_value(user_hand, model_deck);
         assign_hand_value(banker_hand, model_deck);
-        
         // check for a pontoon - outside turn so doesn't need own variable to break out of while loops
         if (banker_hand->value == 21) { // banker wins on draw so evaluate their cards first
-            printf("\nBanker's Hand:\n");
-            print_hidden_cards(hidden_card);
-            printf("\nUser's Hand:\n");
-            print_hand(user_hand, model_deck);
-            printf("\nBanker wins with a pontoon!");
+            print_both_hands(user_hand, banker_hand, model_deck);
+            printf("\nBanker wins with a pontoon!\n");
             continue;
         }
         if (user_hand->value == 21) {
-            printf("\nBanker's Hand:\n");
-            print_hidden_cards(hidden_card);
-            printf("\nUser's Hand:\n");
-            print_hand(user_hand, model_deck);
-            printf("\nBanker wins with a pontoon!");
+            print_both_hands(user_hand, banker_hand, model_deck);
+            printf("\nBanker wins with a pontoon!\n");
             continue;
         }
+        // note: continue sends back to start of while loop
 
         // note: increment size after calling it so size means size not index
         // user's turn
+        printf("\nUser's turn\n");
+        // define game-ending senarios variables now because they need to persist between while loops for double break;
+        int early_end = 0;
         while_condition = 1;
         while (while_condition) {
             // checks for game-ending senarios now so can print actual bankers cards 
             // check for bust
             if (user_hand->value > 21) {
-                bust = 1;
-                // print cards
-                printf("\nBanker's Hand:\n");
-                print_hidden_cards(hidden_card);
-                printf("\nUser's Hand:\n");
-                print_hand(user_hand, model_deck);
-                printf("Hand value: %d\n", user_hand->value);
+                early_end = 1;
+                print_both_hands(user_hand, banker_hand, model_deck);
                 printf("BUST! Banker wins!\n");
                 break;
             }
             // check for a 5 card trick
             if (user_hand->size == 5) {
-                five_card_trick = 1;
-                printf("\nBanker's Hand:\n");
-                print_hidden_cards(hidden_card);
-                printf("\nUser's Hand:\n");
-                print_hand(user_hand, model_deck);
-                printf("Hand value: %d\n", user_hand->value);
-                printf("User wins with a 5 card trick!");
+                early_end = 1;
+                print_both_hands(user_hand, banker_hand, model_deck);
+                printf("User wins with a 5 card trick!\n");
                 break;
             }
 
             // print cards
-            printf("\nBanker's Hand:\n");
-            print_hidden_cards(hidden_card);
-            printf("\nUser's Hand:\n");
-            print_hand(user_hand, model_deck);
-            printf("Hand value: %d\n", user_hand->value);
+            print_user_hand(user_hand, hidden_card, model_deck);
             
             // safely take input
             printf("\nEnter 't' to twist.\nEnter 's' to stick.\nEnter 'e' to exit game.\n");
@@ -312,8 +289,37 @@ void pontoon(void) {
             }
         }
         if (!game_ongoing) break; // if user entered e, this will activate
-        if (bust) continue;
-        if (five_card_trick) continue;
+        if (early_end) continue;
+
+        // bankers turn
+        printf("\nBanker's turn\n");
+        while_condition = 1;
+        while (while_condition) {
+            // print cards
+            print_both_hands(user_hand, banker_hand, model_deck);
+            // checks for game-ending senarios
+            if (banker_hand->value > 21) {
+                printf("\nBanker is bust! User wins!\n");
+                early_end = 1;
+                break;
+            }
+            // check for a 5 card trick
+            if (banker_hand->size == 5) {
+                printf("\nBanker wins with a 5 card trick!\n");
+                early_end = 1;
+                break;
+            }
+            // banker twists until 17 or higher
+            if (banker_hand->value < 17) {
+                banker_hand->index[banker_hand->size++] = shuffled_ideck[shuffled_index++];
+                assign_hand_value(banker_hand, model_deck);
+            } else while_condition = 0;
+            sleep(1); // pause for 1 second between banker turns
+        }
+        if (early_end) break;
+        if (user_hand->value > banker_hand->value) printf("\nUser Wins!\n");
+        else if (user_hand->value == banker_hand->value) printf("Banker wins by default!");
+        else printf("\nBanker wins!\n");
     }
 
     // free memory
@@ -389,6 +395,7 @@ int *create_shuffled_ideck(void) { // calls on shuffle_ideck - used in random_ca
 
 void shuffle_ideck(int ideck[]) { // used in create_shuffled_ideck and random_deck
     /* assigns 0 to 51 to array of an index deck (ideck) and uses a fisher-yates shuffle */
+    srand(time(NULL)); // seeds rand() with no seconds since 1/1/1970
     for (int n = 0; n < DECK_SIZE; n++) ideck[n] = n;
     for (int i = 0; i < DECK_SIZE; i++) {
         // pick a random second index value from i to 51 to swap with
@@ -464,4 +471,21 @@ void assign_hand_value(struct hand *given_hand, struct card *given_model_deck) {
     }
     // note: might be a better method than if statements, used them because there's not too many options
     given_hand->value = hand_value;
+}
+
+void print_user_hand(struct hand *given_user_hand, struct card *given_hidden_card, struct card *given_model_deck) {
+    printf("\nBanker's Hand:\n");
+    print_hidden_cards(given_hidden_card);
+    printf("\nUser's Hand:\n");
+    print_hand(given_user_hand, given_model_deck);
+    printf("Hand value: %d\n", given_user_hand->value);
+}
+
+void print_both_hands(struct hand *given_user_hand, struct hand *given_banker_hand, struct card *given_model_deck) {
+    printf("\nBanker's Hand:\n");
+    print_hand(given_banker_hand, given_model_deck);
+    printf("Banker's hand value: %d\n", given_banker_hand->value);
+    printf("\nUser's Hand:\n");
+    print_hand(given_user_hand, given_model_deck);
+    printf("Hand value: %d\n", given_user_hand->value);
 }
