@@ -19,4 +19,5 @@ More standard style decisions:
 
 AI Acknowledgement:
 
-ChatGPT (OpenAI, [https://www.chatgpt.com/](https://chatgpt.com/)) and ClaudeAI ([https://www.claude.ai/](https://claude.ai/)) were used for the development of ideas, implementation, and syntax for this code, however no code was copied over to or from the AI. They weren't told my task at any point, only asked how to implement lookup tables, struct-arrays, double while-breaks etc.
+ChatGPT (OpenAI, [https://www.chatgpt.com/](https://chatgpt.com/)) and ClaudeAI (Anthropic, [https://www.claude.ai/](https://claude.ai/)) were used for the development of ideas, implementation, and syntax for this code, however no code was copied over to or from the AI. They weren't told my task at any point, only asked how to implement lookup tables, struct-arrays, double while-breaks etc.
+
