@@ -6,6 +6,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <unistd.h>
+#include <time.h>
 #include "funcs.h"
 
 /* Prototypes mirroring the C++ version */
@@ -37,7 +39,7 @@ static void main_menu(void)
 
 static int get_user_input(void)
 {
-    enum { MENU_ITEMS = 5 };   /* 1..4 = items, 5 = Exit */
+    enum { MENU_ITEMS = 4 };   /* 1..3 = items, 4 = Exit */
     char buf[128];
     int valid_input = 0;
     int value = 0;
